@@ -13,8 +13,9 @@
 
 /* Hero buttons — fixed width so both are identical size */
 .hero-btn {
-  width: 200px;
+  width: 220px;
   text-align: center;
+  white-space: nowrap;
 }
 
 /* Profile photo in hero */
