@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Workout Planner — Derek W. Bergeson</title>
+  <style>
+    /* ── Reset & Base ──────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #0f1923;
+      color: #e8edf3;
+      min-height: 100vh;
+    }
+
+    /* ── Top Nav ───────────────────────────────────────── */
+    .top-nav {
+      background: #080f18;
+      padding: 0.7rem 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      border-bottom: 2px solid #c0392b;
+    }
+    .top-nav .brand { font-weight: 700; color: #e74c3c; font-size: 1rem; margin-right: auto; }
+    .top-nav a { color: #bdc3c7; text-decoration: none; font-size: 0.875rem; font-weight: 500; }
+    .top-nav a:hover { color: #e74c3c; }
+
+    /* ── Page Header ───────────────────────────────────── */
+    .page-header {
+      background: linear-gradient(135deg, #0d1b2a, #1a2332);
+      text-align: center;
+      padding: 48px 1rem 40px;
+      border-bottom: 3px solid #c0392b;
+    }
+    .page-header h1 { font-size: 2.2rem; font-weight: 800; color: #fff; margin-bottom: 0.4rem; }
+    .page-header p { color: #7f8c8d; font-size: 1rem; max-width: 540px; margin: 0 auto; }
+
+    /* ── Main Layout ───────────────────────────────────── */
+    .app-container {
+      max-width: 880px;
+      margin: 0 auto;
+      padding: 2rem 1rem 4rem;
+    }
+
+    /* ── Controls Panel ────────────────────────────────── */
+    .controls-panel {
+      background: #1a2740;
+      border-radius: 10px;
+      padding: 1.75rem 2rem;
+      margin-bottom: 2rem;
+      border: 1px solid #2c3e50;
+    }
+    .controls-panel h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #e74c3c;
+      margin-bottom: 1.25rem;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .form-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: flex-end;
+    }
+
+    .form-group { display: flex; flex-direction: column; gap: 0.4rem; flex: 1; min-width: 180px; }
+    .form-group label { font-size: 0.8rem; font-weight: 600; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    select {
+      background: #0f1923;
+      color: #e8edf3;
+      border: 1px solid #2c3e50;
+      border-radius: 6px;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.95rem;
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23e74c3c' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.75rem center;
+      padding-right: 2rem;
+    }
+    select:focus { outline: none; border-color: #e74c3c; }
+
+    .btn-generate {
+      background: #c0392b;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      padding: 0.65rem 1.75rem;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+      white-space: nowrap;
+    }
+    .btn-generate:hover { background: #e74c3c; }
+
+    /* ── Workout Output ─────────────────────────────────── */
+    #workout-output { display: none; }
+
+    .workout-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .workout-title { font-size: 1.5rem; font-weight: 800; color: #fff; }
+    .workout-meta { font-size: 0.85rem; color: #7f8c8d; margin-top: 0.2rem; }
+
+    .btn-print {
+      background: transparent;
+      border: 1px solid #2c3e50;
+      color: #bdc3c7;
+      border-radius: 6px;
+      padding: 0.45rem 1rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-print:hover { border-color: #e74c3c; color: #e74c3c; }
+
+    /* ── Exercise Card ──────────────────────────────────── */
+    .exercise-card {
+      background: #1a2740;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+      border-left: 4px solid #c0392b;
+      display: flex;
+      gap: 1rem;
+      align-items: flex-start;
+      transition: border-color 0.2s, opacity 0.2s;
+    }
+    .exercise-card.completed {
+      border-left-color: #27ae60;
+      opacity: 0.65;
+    }
+
+    .ex-check {
+      margin-top: 2px;
+      cursor: pointer;
+      accent-color: #27ae60;
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .ex-body { flex: 1; }
+
+    .ex-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.35rem;
+    }
+    .exercise-card.completed .ex-name { text-decoration: line-through; color: #7f8c8d; }
+
+    .ex-stats {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin-bottom: 0.5rem;
+    }
+    .stat-pill {
+      background: #0f1923;
+      border-radius: 4px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #bdc3c7;
+    }
+    .stat-pill span { color: #e74c3c; }
+
+    .ex-tip {
+      font-size: 0.85rem;
+      color: #7f8c8d;
+      font-style: italic;
+      line-height: 1.5;
+    }
+
+    .ex-swap {
+      background: transparent;
+      border: 1px solid #2c3e50;
+      color: #7f8c8d;
+      border-radius: 4px;
+      padding: 0.2rem 0.6rem;
+      font-size: 0.75rem;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .ex-swap:hover { border-color: #e74c3c; color: #e74c3c; }
+
+    /* ── Rest Timer ─────────────────────────────────────── */
+    .rest-timer-bar {
+      background: #1a2740;
+      border-radius: 8px;
+      padding: 1rem 1.5rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+      border: 1px solid #2c3e50;
+    }
+    .timer-label { font-size: 0.85rem; color: #7f8c8d; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .timer-display {
+      font-size: 1.6rem;
+      font-weight: 800;
+      color: #e74c3c;
+      font-variant-numeric: tabular-nums;
+      min-width: 3.5rem;
+    }
+    .timer-display.running { color: #27ae60; }
+    .btn-timer {
+      background: #c0392b;
+      color: #fff;
+      border: none;
+      border-radius: 5px;
+      padding: 0.4rem 1rem;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    .btn-timer:hover { background: #e74c3c; }
+    .btn-timer.secondary {
+      background: transparent;
+      border: 1px solid #2c3e50;
+      color: #bdc3c7;
+    }
+    .btn-timer.secondary:hover { border-color: #7f8c8d; color: #fff; }
+
+    .progress-summary {
+      margin-left: auto;
+      font-size: 0.85rem;
+      color: #7f8c8d;
+    }
+    .progress-summary strong { color: #27ae60; }
+
+    /* ── Progress Bar ───────────────────────────────────── */
+    .progress-bar-wrap {
+      background: #0f1923;
+      border-radius: 4px;
+      height: 6px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #c0392b, #e74c3c);
+      border-radius: 4px;
+      transition: width 0.4s ease;
+      width: 0%;
+    }
+
+    /* ── Footer ─────────────────────────────────────────── */
+    .page-footer {
+      text-align: center;
+      color: #2c3e50;
+      font-size: 0.8rem;
+      padding: 1.5rem;
+      border-top: 1px solid #1a2740;
+      margin-top: 2rem;
+    }
+    .page-footer a { color: #e74c3c; text-decoration: none; }
+
+    /* ── Print styles ───────────────────────────────────── */
+    @media print {
+      .top-nav, .controls-panel, .rest-timer-bar, .btn-print, .ex-swap, .ex-check, .page-footer { display: none !important; }
+      body { background: #fff; color: #000; }
+      .exercise-card { border: 1px solid #ccc; background: #fff; color: #000; page-break-inside: avoid; }
+      .ex-name { color: #000; }
+      .ex-tip { color: #444; }
+      .stat-pill { background: #eee; color: #333; }
+      .stat-pill span { color: #c0392b; }
+    }
+
+    @media (max-width: 540px) {
+      .page-header h1 { font-size: 1.6rem; }
+      .controls-panel { padding: 1.25rem; }
+      .exercise-card { padding: 1rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ── Nav ──────────────────────────────────────────────── -->
+  <nav class="top-nav">
+    <span class="brand">Derek W. Bergeson</span>
+    <a href="index.html">Home</a>
+    <a href="resume.html">Résumé</a>
+    <a href="scratch.html">Weightlifting</a>
+  </nav>
+
+  <!-- ── Header ───────────────────────────────────────────── -->
+  <header class="page-header">
+    <h1>Daily Workout Planner</h1>
+    <p>Select a muscle group and difficulty to generate a complete, structured workout plan.</p>
+  </header>
+
+  <!-- ── App ──────────────────────────────────────────────── -->
+  <div class="app-container">
+
+    <!-- Controls -->
+    <div class="controls-panel">
+      <h2>Build Your Workout</h2>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="muscle-select">Muscle Group</label>
+          <select id="muscle-select">
+            <option value="">— Select —</option>
+            <option value="legs">Legs (Quads, Hamstrings, Glutes)</option>
+            <option value="back">Back (Lats, Traps, Erectors)</option>
+            <option value="chest">Chest (Pecs, Front Delts)</option>
+            <option value="shoulders">Shoulders (Delts, Rotator Cuff)</option>
+            <option value="arms">Arms (Biceps, Triceps, Forearms)</option>
+            <option value="fullbody">Full Body / Olympic Lifting Focus</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="difficulty-select">Difficulty</label>
+          <select id="difficulty-select">
+            <option value="beginner">Beginner</option>
+            <option value="intermediate" selected>Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+        <button class="btn-generate" onclick="generateWorkout()">Generate Workout</button>
+      </div>
+    </div>
+
+    <!-- Output -->
+    <div id="workout-output">
+
+      <div class="workout-header">
+        <div>
+          <div class="workout-title" id="workout-title"></div>
+          <div class="workout-meta" id="workout-meta"></div>
+        </div>
+        <button class="btn-print" onclick="window.print()">⎙ Print / Save</button>
+      </div>
+
+      <!-- Progress bar -->
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-fill" id="progress-fill"></div>
+      </div>
+
+      <!-- Rest Timer -->
+      <div class="rest-timer-bar">
+        <span class="timer-label">Rest Timer</span>
+        <span class="timer-display" id="timer-display">2:00</span>
+        <button class="btn-timer" id="timer-btn" onclick="toggleTimer()">Start</button>
+        <button class="btn-timer secondary" onclick="resetTimer()">Reset</button>
+        <span class="progress-summary" id="progress-summary">0 of 0 complete</span>
+      </div>
+
+      <!-- Exercise list -->
+      <div id="exercise-list"></div>
+
+    </div>
+  </div>
+
+  <!-- ── Footer ───────────────────────────────────────────── -->
+  <footer class="page-footer">
+    <p><a href="scratch.html">&larr; Back to Weightlifting Page</a> &nbsp;&bull;&nbsp; Derek W. Bergeson &mdash; IS 201 Final Project</p>
+  </footer>
+
+  <script>
+    // ── Workout Data ────────────────────────────────────────
+    const WORKOUTS = {
+      legs: {
+        name: "Leg Day",
+        focus: "Quads, Hamstrings, Glutes & Calves",
+        beginner: [
+          { name: "Goblet Squat", sets: 3, reps: "12", rest: "90s", tip: "Hold a dumbbell at your chest. Keep your chest tall, knees tracking over your toes, and sit deep into the squat." },
+          { name: "Romanian Deadlift (Dumbbell)", sets: 3, reps: "12", rest: "90s", tip: "Hinge at the hips, not the waist. Feel the stretch in your hamstrings before driving your hips through at the top." },
+          { name: "Walking Lunges", sets: 3, reps: "10 each leg", rest: "90s", tip: "Take a long stride. Keep your front shin vertical and your torso upright throughout the movement." },
+          { name: "Leg Press (Machine)", sets: 3, reps: "15", rest: "90s", tip: "Place feet shoulder-width apart at mid-height on the platform. Do not lock your knees at the top." },
+          { name: "Standing Calf Raise", sets: 3, reps: "20", rest: "60s", tip: "Pause at the top of each rep and lower slowly. Full range of motion is more important than load." },
+        ],
+        intermediate: [
+          { name: "Back Squat", sets: 4, reps: "6–8", rest: "3 min", tip: "Bar sits on your upper traps (high bar) or across your rear delts (low bar). Brace your core hard before descending. Hit depth — hip crease below the top of the knee." },
+          { name: "Romanian Deadlift (Barbell)", sets: 4, reps: "8", rest: "2 min", tip: "Load the bar heavier than you think. Push your hips back as far as possible and feel the hamstring load before extending." },
+          { name: "Hack Squat or Leg Press", sets: 3, reps: "10–12", rest: "90s", tip: "Go slow on the eccentric (3 seconds down). This builds the quad size that supports heavier squats." },
+          { name: "Walking Lunges (Barbell)", sets: 3, reps: "8 each leg", rest: "2 min", tip: "Keep the barbell centered and your torso upright. A slight forward lean is acceptable but avoid caving knees." },
+          { name: "Leg Curl (Machine)", sets: 3, reps: "12", rest: "90s", tip: "Control the eccentric. Squeeze hard at the top of each rep. Your hamstrings are the supporting cast for every squat and pull." },
+          { name: "Seated Calf Raise", sets: 4, reps: "15", rest: "60s", tip: "The seated position targets the soleus, a deeper calf muscle often neglected. Use a full ROM every rep." },
+        ],
+        advanced: [
+          { name: "Back Squat (Heavy, 85%+)", sets: 5, reps: "3–5", rest: "4 min", tip: "Belt up. Take a huge breath into your belly before the descent. The walkout sets the tone — be efficient and deliberate." },
+          { name: "Front Squat", sets: 4, reps: "4–6", rest: "3 min", tip: "Critical for Olympic lifting. Keep your elbows high — if they drop, the bar will. Core and upper back must stay rigid." },
+          { name: "Romanian Deadlift (Heavy)", sets: 4, reps: "6", rest: "2.5 min", tip: "Load it. You should feel this in your hamstrings for two days. Controlled descent, explosive hip extension at the top." },
+          { name: "Pause Squat (3-sec pause at bottom)", sets: 3, reps: "4", rest: "3 min", tip: "Eliminates the stretch-reflex bounce. Brutally honest about your positional strength. Use 70% of your back squat max." },
+          { name: "Single-Leg Leg Press", sets: 3, reps: "10 each", rest: "90s", tip: "Addresses imbalances between legs. A common hidden weakness that appears under maximal bilateral loading." },
+          { name: "Nordic Hamstring Curl", sets: 3, reps: "5–8", rest: "2 min", tip: "One of the highest-yield hamstring exercises for injury prevention. Lower under full control — as slow as possible." },
+          { name: "Standing Calf Raise (Heavy)", sets: 4, reps: "12", rest: "90s", tip: "Add load progressively. Big calves are built with heavy weight and high tension, not just high reps." },
+        ],
+      },
+
+      back: {
+        name: "Back Day",
+        focus: "Lats, Traps, Rear Delts & Erector Spinae",
+        beginner: [
+          { name: "Lat Pulldown", sets: 3, reps: "12", rest: "90s", tip: "Pull to your upper chest. Lean back slightly and lead with your elbows — imagine pushing them into your back pockets." },
+          { name: "Seated Cable Row", sets: 3, reps: "12", rest: "90s", tip: "Keep a neutral spine. Pull the handle to your lower sternum and squeeze your shoulder blades together at the end." },
+          { name: "Dumbbell Single-Arm Row", sets: 3, reps: "10 each", rest: "90s", tip: "Support on a bench. Row the dumbbell toward your hip, not your shoulder. Full extension at the bottom." },
+          { name: "Face Pull", sets: 3, reps: "15", rest: "60s", tip: "Set the cable at eye height. Pull to your face with elbows high. Excellent for shoulder health and rear delt development." },
+          { name: "Hyperextension (Back Extension)", sets: 3, reps: "15", rest: "60s", tip: "Don't hyperextend — stop at neutral spine. This builds the erectors that protect your lower back under load." },
+        ],
+        intermediate: [
+          { name: "Barbell Bent-Over Row", sets: 4, reps: "6–8", rest: "2.5 min", tip: "Torso at roughly 45°. Row to your lower rib cage, not your belly. Keep your lower back locked — this is a hinge, not a squat." },
+          { name: "Weighted Pull-Up", sets: 4, reps: "5–8", rest: "2.5 min", tip: "Full hang at the bottom every rep. Pull until your chin clears the bar. Add weight via a dip belt once bodyweight is easy." },
+          { name: "T-Bar Row or Chest-Supported Row", sets: 3, reps: "10", rest: "90s", tip: "Chest-supported removes lower-back fatigue from the equation, letting you overload the lats and mid-back directly." },
+          { name: "Straight-Arm Pulldown", sets: 3, reps: "15", rest: "60s", tip: "Arms stay straight throughout. Stretches and contracts the lat through a long range of motion. Great for lat isolation." },
+          { name: "Face Pull", sets: 3, reps: "15", rest: "60s", tip: "Non-negotiable for shoulder health. Pull to eye level, elbows high. Think 'ear to shoulder' at the end of each rep." },
+          { name: "Barbell Good Morning", sets: 3, reps: "10", rest: "90s", tip: "Hinge deeply with a neutral spine. Loads the hamstrings and erectors simultaneously. Start light — technique first." },
+        ],
+        advanced: [
+          { name: "Barbell Bent-Over Row (Heavy, 85%+)", sets: 5, reps: "4–6", rest: "3 min", tip: "Brace as hard as you do for a deadlift. Row explosively and lower with control. Your upper back should be the limiting factor, not your lower back." },
+          { name: "Weighted Pull-Up (Heavy)", sets: 5, reps: "4–6", rest: "3 min", tip: "Add significant load. A strong lat is a foundation for every overhead press and pull in Olympic lifting." },
+          { name: "Pendlay Row", sets: 4, reps: "5", rest: "3 min", tip: "Bar resets dead on the floor each rep. Explosive pull from a dead stop — teaches rate of force development in the pull pattern." },
+          { name: "Snatch-Grip Deadlift", sets: 4, reps: "4", rest: "3 min", tip: "Wide snatch grip. This crushes the upper back, lats, and traps in the exact position used in the Olympic lifts. Essential for weightlifters." },
+          { name: "Cable Row (Heavy, various grips)", sets: 3, reps: "8", rest: "90s", tip: "Rotate through grips (wide, neutral, underhand) across sets to hit different portions of the back." },
+          { name: "Deficit Deadlift", sets: 3, reps: "4", rest: "3 min", tip: "Stand on a 2–4\" plate. Increases ROM at the bottom, building strength exactly where the pull begins." },
+        ],
+      },
+
+      chest: {
+        name: "Chest Day",
+        focus: "Pectoralis Major/Minor, Anterior Delts, Triceps",
+        beginner: [
+          { name: "Push-Up (Standard)", sets: 3, reps: "10–15", rest: "90s", tip: "Full range of motion — chest to the floor, arms fully extended at the top. Keep your core tight the whole time." },
+          { name: "Dumbbell Bench Press", sets: 3, reps: "12", rest: "90s", tip: "Lower the dumbbells until your upper arms are parallel to the floor. Press in a slight arc — not straight up." },
+          { name: "Dumbbell Fly", sets: 3, reps: "12", rest: "90s", tip: "Slight bend in elbows throughout. Think 'hugging a tree.' Stretch at the bottom, squeeze at the top." },
+          { name: "Incline Dumbbell Press", sets: 3, reps: "12", rest: "90s", tip: "Bench at 30–45°. Targets the upper chest, which is often underdeveloped. Control the descent." },
+          { name: "Cable Chest Fly (Low to High)", sets: 3, reps: "15", rest: "60s", tip: "Set cables at the lowest anchor. Pull upward in an arc — directly targets the upper pec fibers." },
+        ],
+        intermediate: [
+          { name: "Barbell Bench Press", sets: 4, reps: "6–8", rest: "2.5 min", tip: "Arch your upper back, feet flat on the floor, bar path slightly toward your lower chest. Controlled descent — touch and press, no bounce." },
+          { name: "Incline Barbell Bench Press", sets: 4, reps: "8", rest: "2 min", tip: "30–45° incline. Upper chest responds well to this angle. Don't let the bar drift toward your neck." },
+          { name: "Weighted Dip (Chest Focus)", sets: 3, reps: "8–10", rest: "2 min", tip: "Lean forward slightly to shift load to your chest. Full descent — until your upper arms are at least parallel." },
+          { name: "Cable Fly (Mid)", sets: 3, reps: "12", rest: "90s", tip: "Cables keep tension on the pecs through the entire range — unlike dumbbells, which lose tension at the top." },
+          { name: "Decline Dumbbell Press", sets: 3, reps: "12", rest: "90s", tip: "Hits the lower pec fibers. Often skipped but contributes to a complete, full chest." },
+        ],
+        advanced: [
+          { name: "Barbell Bench Press (Heavy, 85%+)", sets: 5, reps: "3–5", rest: "3–4 min", tip: "Leg drive, full arch, tight shoulder blades. Treat each heavy bench set like a max attempt — that focus is what builds elite pressing." },
+          { name: "Incline Bench Press (Heavy)", sets: 4, reps: "4–6", rest: "3 min", tip: "Upper chest strength directly supports the jerk receiving position and overhead stability in Olympic lifting." },
+          { name: "Weighted Dip (Heavy)", sets: 4, reps: "6–8", rest: "2.5 min", tip: "A classic upper-body mass builder. Add weight consistently. Depth is non-negotiable." },
+          { name: "Paused Bench Press (2-sec pause)", sets: 3, reps: "5", rest: "3 min", tip: "Eliminates the bounce. Builds raw pressing strength off the chest — your weakest point in the lift." },
+          { name: "Cable Fly Superset (High → Low)", sets: 3, reps: "10+10", rest: "90s", tip: "Hit high cable, then immediately switch to low cable with no rest. Hits every fiber angle in a single set." },
+          { name: "Push-Up (Weighted vest or ring push-up)", sets: 3, reps: "15", rest: "60s", tip: "Ring push-ups add instability, activating more stabilizer muscles. Add a vest for additional load." },
+        ],
+      },
+
+      shoulders: {
+        name: "Shoulder Day",
+        focus: "Anterior, Lateral & Posterior Deltoids, Rotator Cuff",
+        beginner: [
+          { name: "Dumbbell Shoulder Press (Seated)", sets: 3, reps: "12", rest: "90s", tip: "Sit upright with back support. Press straight up, don't flare your elbows excessively. Control the descent." },
+          { name: "Lateral Raise", sets: 3, reps: "15", rest: "60s", tip: "Slight bend in elbows. Lead with your elbows, not your hands. Stop at shoulder height — going higher shifts load to your traps." },
+          { name: "Front Raise (Dumbbell)", sets: 3, reps: "12", rest: "60s", tip: "Alternate arms. Keep a neutral grip or palms down. Don't use momentum — this is a controlled movement." },
+          { name: "Face Pull", sets: 3, reps: "15", rest: "60s", tip: "Rear delts and rotator cuff work. Pull to face height with elbows high and wide. Non-negotiable for shoulder health." },
+          { name: "Band Pull-Apart", sets: 3, reps: "20", rest: "45s", tip: "Keep arms straight. Squeeze your rear delts as the band crosses your chest. Great for posture and cuff health." },
+        ],
+        intermediate: [
+          { name: "Overhead Press (Barbell, Standing)", sets: 4, reps: "6–8", rest: "2.5 min", tip: "Brace hard. Press the bar in a straight line — your head moves back, then forward as the bar passes. Finish with full lockout." },
+          { name: "Dumbbell Arnold Press", sets: 3, reps: "10", rest: "90s", tip: "Rotate from a neutral grip at the bottom to a pronated grip at the top. Hits all three heads of the delt." },
+          { name: "Lateral Raise (Cable or Dumbbell, Heavy)", sets: 4, reps: "12", rest: "90s", tip: "Go heavier than feels comfortable. Slight forward lean lets you load the lateral delt more directly." },
+          { name: "Rear Delt Fly (Cable or Dumbbell)", sets: 3, reps: "15", rest: "60s", tip: "Hinge forward, arms out to the sides. Squeeze your rear delts, not your traps. Full extension at the bottom." },
+          { name: "Landmine Press", sets: 3, reps: "10 each", rest: "90s", tip: "One of the best shoulder-friendly pressing movements. The arc of the bar path is joint-friendly and effective." },
+        ],
+        advanced: [
+          { name: "Overhead Press (Barbell, Heavy, 85%+)", sets: 5, reps: "3–5", rest: "3–4 min", tip: "The overhead press is the most direct overhead strength builder. A strong press means a stronger jerk receiving position." },
+          { name: "Push Press", sets: 4, reps: "4–6", rest: "3 min", tip: "Dip and drive with your legs to initiate the bar. Lockout overhead with full extension. Used to overload the press beyond strict press maxes." },
+          { name: "Seated Dumbbell Press (Heavy, Drop Set)", sets: 3, reps: "8 + drop", rest: "2 min", tip: "Hit 8 reps, immediately drop weight by 20% and go to failure. Accumulates volume efficiently." },
+          { name: "Lateral Raise (Mechanical Drop Set)", sets: 3, reps: "10+10+10", rest: "90s", tip: "Start with cables, switch to dumbbells, then switch to lighter dumbbells. Three angles, no rest between." },
+          { name: "Face Pull (Heavy)", sets: 4, reps: "15", rest: "60s", tip: "Don't skip this. Healthy rotator cuffs are what keep you pressing and lifting for decades." },
+          { name: "Bradford Press", sets: 3, reps: "10", rest: "90s", tip: "Alternate front and behind-the-neck press in a continuous arc. Excellent for shoulder mobility and delt endurance." },
+        ],
+      },
+
+      arms: {
+        name: "Arms Day",
+        focus: "Biceps, Triceps & Forearms",
+        beginner: [
+          { name: "Barbell Curl", sets: 3, reps: "12", rest: "90s", tip: "Keep your elbows pinned at your sides throughout. Don't swing — the only thing moving should be your forearms." },
+          { name: "Dumbbell Hammer Curl", sets: 3, reps: "12", rest: "90s", tip: "Neutral grip (thumbs up). Targets the brachialis and forearms in addition to the biceps." },
+          { name: "Tricep Pushdown (Cable)", sets: 3, reps: "15", rest: "60s", tip: "Elbows stay at your sides. Full extension at the bottom — feel the tricep contract hard before releasing." },
+          { name: "Overhead Dumbbell Tricep Extension", sets: 3, reps: "12", rest: "90s", tip: "Elbows point straight up. Lower the dumbbell behind your head and press back to full extension." },
+          { name: "Wrist Curl (Dumbbell)", sets: 3, reps: "20", rest: "45s", tip: "Forearms on your thighs, palms up. Full range of motion — let the weight roll to your fingertips." },
+        ],
+        intermediate: [
+          { name: "EZ-Bar Curl", sets: 4, reps: "8–10", rest: "90s", tip: "The angled grip reduces wrist strain while still loading the biceps heavily. Control the eccentric — 3 seconds down." },
+          { name: "Incline Dumbbell Curl", sets: 3, reps: "10", rest: "90s", tip: "Lying on an incline bench, arms hang behind you — this maximizes the stretch on the long head of the bicep." },
+          { name: "Close-Grip Bench Press", sets: 4, reps: "8", rest: "2 min", tip: "Hands shoulder-width on the bar. Elbows tucked in. This is the premier mass builder for the triceps." },
+          { name: "Skull Crusher (EZ-Bar)", sets: 3, reps: "10", rest: "90s", tip: "Lower to your forehead (carefully). Keep your elbows vertical — don't let them flare out." },
+          { name: "Cable Curl (Single-arm)", sets: 3, reps: "12 each", rest: "60s", tip: "Cables maintain tension throughout the ROM. Twist your wrist to a fully supinated position at the top." },
+          { name: "Reverse Curl", sets: 3, reps: "12", rest: "60s", tip: "Overhand grip on a barbell. Builds the brachialis and forearm extensors — adds thickness to the upper arm." },
+        ],
+        advanced: [
+          { name: "Weighted Chin-Up (Supinated Grip)", sets: 4, reps: "6–8", rest: "2.5 min", tip: "The best bicep movement you're probably not doing heavily enough. Add weight aggressively." },
+          { name: "Barbell Drag Curl", sets: 4, reps: "8", rest: "90s", tip: "Drag the bar up your torso rather than curling it out in an arc. Eliminates front delt involvement and maximizes bicep tension." },
+          { name: "Preacher Curl (EZ-Bar, Heavy)", sets: 3, reps: "8", rest: "90s", tip: "Preacher bench isolates the bicep by removing swing. Your elbows stay planted — no cheating." },
+          { name: "Close-Grip Bench Press (Heavy)", sets: 4, reps: "5", rest: "3 min", tip: "Treat it like a competition lift. Full arch, leg drive, controlled descent. Tricep strength carryover to the jerk is real." },
+          { name: "Tricep Dip (Weighted)", sets: 4, reps: "8–10", rest: "2 min", tip: "Torso upright to isolate triceps. Deep descent, full lockout. Add weight consistently." },
+          { name: "Farmer's Carry", sets: 3, reps: "40m", rest: "90s", tip: "Heavy dumbbells or hex bar. Builds grip, forearms, and mental toughness. Walk with purpose — don't let the weights swing." },
+        ],
+      },
+
+      fullbody: {
+        name: "Full Body / Olympic Lifting Focus",
+        focus: "Snatch, Clean & Jerk, Squat, Pull — Complete Athletic Development",
+        beginner: [
+          { name: "Hang Power Clean", sets: 4, reps: "5", rest: "2 min", tip: "Start with the bar at mid-thigh. Hips drive forward and up, then pull yourself under the bar. Catch in a quarter squat." },
+          { name: "Overhead Squat", sets: 4, reps: "5", rest: "2 min", tip: "Your most honest mobility assessment. Bar overhead, wide grip. If this is hard, your snatch will be harder. Work on it." },
+          { name: "Front Squat", sets: 4, reps: "5", rest: "2 min", tip: "High elbows, upright torso. The front squat builds the specific strength needed for clean recovery." },
+          { name: "Romanian Deadlift", sets: 3, reps: "8", rest: "90s", tip: "Hamstring strength is the engine of the pull. Don't neglect it." },
+          { name: "Press Behind Neck (Light)", sets: 3, reps: "10", rest: "90s", tip: "Builds overhead stability and shoulder health. Use a light load and emphasize full lockout and shoulder mobility." },
+        ],
+        intermediate: [
+          { name: "Snatch (Technical Work)", sets: 6, reps: "3", rest: "2–3 min", tip: "Work at 70–80% of max. Focus on bar path, timing, and receiving position. Quality over quantity every single rep." },
+          { name: "Clean & Jerk", sets: 5, reps: "2", rest: "3 min", tip: "Work at 75–85%. Split jerk: take a definitive split with your rear knee close to the floor. Stand the jerk up." },
+          { name: "Back Squat (Post-Competition Lifts)", sets: 4, reps: "5", rest: "3 min", tip: "After the Olympic lifts while you're still fresh-ish. The squat is the base of the pyramid for weightlifters." },
+          { name: "Snatch Pull", sets: 4, reps: "4", rest: "2.5 min", tip: "Load slightly above your snatch max. Reinforce the pull pattern with added load. Bar stays close, big hip extension." },
+          { name: "Jerk from Blocks", sets: 4, reps: "3", rest: "2.5 min", tip: "Isolates the jerk without the clean. Lets you overload the jerk-specific motor pattern." },
+          { name: "Good Morning", sets: 3, reps: "8", rest: "90s", tip: "Posterior chain accessory work. Backs up the pull and helps you stay over the bar longer." },
+        ],
+        advanced: [
+          { name: "Snatch (Competition Simulation)", sets: 5, reps: "2", rest: "4 min", tip: "Work from 80–95%. Treat each set like a meet attempt. Same shoes, belt, chalk — the same preparation every time." },
+          { name: "Clean & Jerk (Heavy Singles)", sets: 5, reps: "1", rest: "4 min", tip: "Build to a heavy single. Use competition openers as your baseline. This is the sport — practice it like it matters." },
+          { name: "Front Squat (95%+)", sets: 4, reps: "2", rest: "4 min", tip: "The front squat maximum directly predicts your clean maximum. You cannot clean what you cannot front squat." },
+          { name: "Snatch Deadlift", sets: 4, reps: "4", rest: "3 min", tip: "Snatch grip, controlled, 110%+ of snatch max. Builds start strength and bar confidence in the wide position." },
+          { name: "Back Squat (Heavy)", sets: 5, reps: "3", rest: "4 min", tip: "The king of strength exercises for weightlifters. Your back squat max sets the ceiling for your front squat and, ultimately, your total." },
+          { name: "Push Press", sets: 4, reps: "4", rest: "3 min", tip: "Overloads the jerk receiving position. If you can push press more than you can jerk, your technique is the limiter." },
+          { name: "Clean Pull", sets: 4, reps: "3", rest: "3 min", tip: "Loaded at 100–110% of clean max. Reinforces bar speed and extension. The pull is where medals are won." },
+        ],
+      },
+    };
+
+    // ── Timer State ─────────────────────────────────────────
+    let timerInterval = null;
+    let timerSeconds = 120;
+    let timerRunning = false;
+    let defaultRestSeconds = 120;
+
+    function toggleTimer() {
+      if (timerRunning) {
+        clearInterval(timerInterval);
+        timerRunning = false;
+        document.getElementById('timer-btn').textContent = 'Resume';
+        document.getElementById('timer-display').classList.remove('running');
+      } else {
+        timerRunning = true;
+        document.getElementById('timer-btn').textContent = 'Pause';
+        document.getElementById('timer-display').classList.add('running');
+        timerInterval = setInterval(() => {
+          if (timerSeconds <= 0) {
+            clearInterval(timerInterval);
+            timerRunning = false;
+            document.getElementById('timer-btn').textContent = 'Start';
+            document.getElementById('timer-display').classList.remove('running');
+            document.getElementById('timer-display').textContent = 'Done!';
+            return;
+          }
+          timerSeconds--;
+          updateTimerDisplay();
+        }, 1000);
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(timerInterval);
+      timerRunning = false;
+      timerSeconds = defaultRestSeconds;
+      document.getElementById('timer-btn').textContent = 'Start';
+      document.getElementById('timer-display').classList.remove('running');
+      updateTimerDisplay();
+    }
+
+    function updateTimerDisplay() {
+      const m = Math.floor(timerSeconds / 60);
+      const s = timerSeconds % 60;
+      document.getElementById('timer-display').textContent =
+        m + ':' + String(s).padStart(2, '0');
+    }
+
+    function parseRestSeconds(restStr) {
+      if (!restStr) return 120;
+      const minMatch = restStr.match(/(\d+)\s*min/);
+      const secMatch = restStr.match(/(\d+)s/);
+      if (minMatch) return parseInt(minMatch[1]) * 60;
+      if (secMatch) return parseInt(secMatch[1]);
+      return 120;
+    }
+
+    // ── Progress Tracking ───────────────────────────────────
+    function updateProgress() {
+      const cards = document.querySelectorAll('.exercise-card');
+      const total = cards.length;
+      const done = document.querySelectorAll('.exercise-card.completed').length;
+      const pct = total > 0 ? (done / total) * 100 : 0;
+      document.getElementById('progress-fill').style.width = pct + '%';
+      document.getElementById('progress-summary').innerHTML =
+        '<strong>' + done + '</strong> of ' + total + ' complete';
+    }
+
+    // ── Generate Workout ────────────────────────────────────
+    function generateWorkout() {
+      const group = document.getElementById('muscle-select').value;
+      const diff = document.getElementById('difficulty-select').value;
+
+      if (!group) {
+        alert('Please select a muscle group first.');
+        return;
+      }
+
+      const data = WORKOUTS[group];
+      const exercises = data[diff];
+
+      // Set title
+      document.getElementById('workout-title').textContent = data.name + ' — ' + diff.charAt(0).toUpperCase() + diff.slice(1);
+      document.getElementById('workout-meta').textContent = 'Focus: ' + data.focus + ' · ' + exercises.length + ' exercises';
+
+      // Reset timer to first exercise rest
+      defaultRestSeconds = parseRestSeconds(exercises[0].rest);
+      timerSeconds = defaultRestSeconds;
+      clearInterval(timerInterval);
+      timerRunning = false;
+      document.getElementById('timer-btn').textContent = 'Start';
+      document.getElementById('timer-display').classList.remove('running');
+      updateTimerDisplay();
+
+      // Render exercises
+      const list = document.getElementById('exercise-list');
+      list.innerHTML = '';
+
+      exercises.forEach((ex, i) => {
+        const card = document.createElement('div');
+        card.className = 'exercise-card';
+        card.id = 'ex-' + i;
+
+        card.innerHTML = `
+          <input type="checkbox" class="ex-check" onchange="toggleComplete(${i}, '${ex.rest}')">
+          <div class="ex-body">
+            <div class="ex-name">${ex.name}</div>
+            <div class="ex-stats">
+              <div class="stat-pill">Sets: <span>${ex.sets}</span></div>
+              <div class="stat-pill">Reps: <span>${ex.reps}</span></div>
+              <div class="stat-pill">Rest: <span>${ex.rest}</span></div>
+            </div>
+            <div class="ex-tip">💡 ${ex.tip}</div>
+            <button class="ex-swap" onclick="swapExercise(${i}, '${group}', '${diff}')">↻ Swap exercise</button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+
+      document.getElementById('workout-output').style.display = 'block';
+      updateProgress();
+      document.getElementById('workout-output').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    function toggleComplete(idx, restStr) {
+      const card = document.getElementById('ex-' + idx);
+      const cb = card.querySelector('.ex-check');
+      card.classList.toggle('completed', cb.checked);
+
+      if (cb.checked) {
+        // Start rest timer for next exercise
+        defaultRestSeconds = parseRestSeconds(restStr);
+        resetTimer();
+        toggleTimer();
+      }
+      updateProgress();
+    }
+
+    function swapExercise(idx, group, diff) {
+      const data = WORKOUTS[group];
+      const exercises = data[diff];
+      // Pick a random different exercise from the same pool
+      const alternatives = exercises.filter((_, i) => i !== idx);
+      if (alternatives.length === 0) return;
+      const alt = alternatives[Math.floor(Math.random() * alternatives.length)];
+
+      const card = document.getElementById('ex-' + idx);
+      card.querySelector('.ex-name').textContent = alt.name;
+      card.querySelector('.ex-check').checked = false;
+      card.classList.remove('completed');
+
+      const pills = card.querySelectorAll('.stat-pill span');
+      pills[0].textContent = alt.sets;
+      pills[1].textContent = alt.reps;
+      pills[2].textContent = alt.rest;
+
+      card.querySelector('.ex-tip').textContent = '💡 ' + alt.tip;
+      updateProgress();
+    }
+  </script>
+
+</body>
+</html>
